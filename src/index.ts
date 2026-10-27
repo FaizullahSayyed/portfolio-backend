@@ -1,17 +1,33 @@
 import { resolve } from "node:path";
 import dotenv from "dotenv";
 import express from "express";
-import { checkDatabaseConnection } from "./config/database";
+import {pool} from "./config/database.js";
+import projectRoutes from "./routes/project.routes.js";
 
 dotenv.config({ path: resolve(__dirname, "../.env") });
 
 const app = express();
 
-void checkDatabaseConnection();
+app.get("/", async(req, res) => {
+  try{
+    await pool.query("SELECT 1");
 
-app.get("/", (req, res) => {
-  res.send("Portfolio Backend is running ✅");
+    res.status(200).json({
+      server: "Server is running on port 3002.",
+      database: "Database in connected"
+    });
+
+  }catch(error){
+     console.error('Database connection failed:', error);
+
+    res.status(500).json({
+      message: 'Portfolio Backend is running ⚠️',
+      database: 'PostgreSQL disconnected ❌',
+    });
+  }
 });
+
+app.use('/api/projects', projectRoutes);
 
 app.listen(3002, () => {
   console.log("Server is running on port 3002");
