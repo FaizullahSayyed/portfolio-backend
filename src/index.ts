@@ -26,7 +26,6 @@ app.get("/", async(req, res) => {
     res.status(500).json({
       message: 'Portfolio Backend is running ⚠️',
       database: 'PostgreSQL disconnected ❌',
-      env: process.env.DATABASE_URL,
     });
   }
 });
