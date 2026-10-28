@@ -18,7 +18,6 @@ app.get("/", async(req, res) => {
     res.status(200).json({
       server: "Server is running on port 3002.",
       database: "Database is connected",
-      env: process.env.DATABASE_URL,
     });
 
   }catch(error){
@@ -27,6 +26,7 @@ app.get("/", async(req, res) => {
     res.status(500).json({
       message: 'Portfolio Backend is running ⚠️',
       database: 'PostgreSQL disconnected ❌',
+      env: process.env.DATABASE_URL,
     });
   }
 });
