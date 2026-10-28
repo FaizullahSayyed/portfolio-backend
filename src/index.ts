@@ -1,8 +1,9 @@
+import 'dotenv/config';
 import { resolve } from "node:path";
 import dotenv from "dotenv";
 import express from "express";
 import {pool} from "./config/database.js";
-import projectRoutes from "./routes/project.routes.js";
+import projectRoutes from "./routes/project.routes";
 
 dotenv.config({ path: resolve(__dirname, "../.env") });
 
@@ -10,11 +11,14 @@ const app = express();
 
 app.get("/", async(req, res) => {
   try{
-    await pool.query("SELECT 1");
+    // await pool.query("SELECT 1");
+    const result = await pool.query("SELECT title FROM projects LIMIT 1");
+    console.log('Database connection successful:', result.rows);
 
     res.status(200).json({
       server: "Server is running on port 3002.",
-      database: "Database in connected"
+      database: "Database is connected",
+      env: process.env.DATABASE_URL,
     });
 
   }catch(error){

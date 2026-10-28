@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import {compare} from "bcryptjs";
 import type { RequestHandler } from "express";
 
