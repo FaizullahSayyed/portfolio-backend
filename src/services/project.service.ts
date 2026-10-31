@@ -1,4 +1,3 @@
-import { Result } from "pg";
 import { pool } from "../config/database";
 import type {
     Project, 
@@ -84,9 +83,18 @@ export async function updateProject(
 }
 
 export async function deleteProject(id: string): Promise<boolean> {
-    const result = await pool.query(
-        `DELETE FROM projects WHERE id = $1`, [id],
+    console.info("[project.service.deleteProject] deleting project", { projectId: id });
+    const result = await pool.query<{ id: string }>(
+        `DELETE FROM projects WHERE id = $1 RETURNING id`,
+        [id],
     );
+    const deleted = result.rows.length > 0;
 
-    return (result.rowCount ?? 0) > 0;
+    console.info("[project.service.deleteProject] delete completed", {
+        projectId: id,
+        rowsAffected: result.rowCount,
+        deleted,
+    });
+
+    return deleted;
 }
