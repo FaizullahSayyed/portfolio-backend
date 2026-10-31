@@ -9,7 +9,7 @@ import type {
 
 export async function getAllProjects(): Promise<Project[]>{
     const result = await pool.query<Project>(
-        `SELECT id, title, description, url, technologies, images, create_at, updated_at
+        `SELECT id, title, description, url, technologies, images, created_at, updated_at
         From projects
         ORDER BY created_at DESC`,
     );
@@ -62,15 +62,14 @@ export async function updateProject(
 
     const result = await pool.query<Project>(
         `UPDATE projects
-        SET title = $1.
-        descroption = $2,
+        SET title = $1,
+        description = $2,
         url = $3,
         technologies = $4,
         images = $5,
         updated_at = NOW()
         WHERE id = $6
-        RETURNING id, title, description, url, technologies, images, created_at, updated_at
-        `,
+        RETURNING id, title, description, url, technologies, images, created_at, updated_at`,
         [
             updated.title,
             updated.description,
