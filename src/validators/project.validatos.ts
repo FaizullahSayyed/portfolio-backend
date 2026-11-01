@@ -9,10 +9,17 @@ const optionalUrl = z
     message: 'URL must use HTTP or HTTPS',
   });
 
+const optionalNullableHttpUrl = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+  optionalUrl.nullable().optional(),
+);
+
 export const createProjectSchema = z.object({
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().min(1),
   url: optionalUrl.nullable().optional(),
+  githubUrl: optionalNullableHttpUrl,
+  dockerUrl: optionalNullableHttpUrl,
   technologies: z.array(z.string().trim().min(1)).optional(),
   images: z.array(optionalUrl).optional(),
 });

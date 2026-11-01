@@ -8,8 +8,11 @@ const express_1 = __importDefault(require("express"));
 const database_js_1 = require("./config/database.js");
 const project_routes_1 = __importDefault(require("./routes/project.routes"));
 const app = (0, express_1.default)();
-const allowedOrigins = (process.env.FRONTEND_ORIGINS ?? "http://localhost:5173")
-    .split(",")
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://portfolio-git-main-faizs7412-7149s-projects.vercel.app",
+    ...(process.env.FRONTEND_ORIGINS ?? "").split(","),
+]
     .map((origin) => origin.trim())
     .filter(Boolean);
 app.use((req, res, next) => {
@@ -45,12 +48,16 @@ app.get("/", async (_req, res) => {
     }
 });
 app.use("/api/projects", project_routes_1.default);
-const errorHandler = (error, _req, res, next) => {
+const errorHandler = (error, req, res, next) => {
     if (res.headersSent) {
         next(error);
         return;
     }
-    console.error("API request failed:", error);
+    console.error("API request failed:", {
+        method: req.method,
+        path: req.originalUrl,
+        error,
+    });
     const databaseErrorCode = typeof error === "object" &&
         error !== null &&
         "code" in error &&
@@ -59,7 +66,7 @@ const errorHandler = (error, _req, res, next) => {
         : undefined;
     if (databaseErrorCode === "23503") {
         res.status(409).json({
-            message: "Project cannot be deleted because it is referenced by other records.",
+            message: "Request conflicts with related records.",
         });
         return;
     }

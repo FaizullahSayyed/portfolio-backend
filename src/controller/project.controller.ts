@@ -2,6 +2,26 @@ import type {RequestHandler} from "express";
 import * as projectService from "../services/project.service";
 import { createProjectSchema, updateProjectSchema } from "../validators/project.validatos"; 
 
+const summarizeUrlInput = (value: unknown) => {
+    if (value === undefined) return { state: "omitted" };
+    if (value === null) return { state: "null" };
+    if (typeof value !== "string") return { state: "invalid-type", type: typeof value };
+
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return { state: "empty" };
+
+    try {
+        const url = new URL(trimmed);
+        return {
+            state: url.protocol === "http:" || url.protocol === "https:" ? "set" : "invalid",
+            protocol: url.protocol,
+            host: url.host,
+        };
+    } catch {
+        return { state: "invalid-url", length: trimmed.length };
+    }
+};
+
 export const getProjects: RequestHandler = async (req, res, next) => {
     try {
         const projects = await projectService.getAllProjects();
@@ -47,10 +67,44 @@ export const createProject: RequestHandler = async (req, res, next) => {
 }
 
 export const updateProject: RequestHandler = async (req, res, next) => {
+    const projectId = req.params.id;
+    const bodyKeys =
+        typeof req.body === "object" && req.body !== null
+            ? Object.keys(req.body)
+            : [];
+    console.info("[project.controller.updateProject] request received", {
+        method: req.method,
+        path: req.originalUrl,
+        projectId,
+        contentType: req.get("Content-Type"),
+        contentLength: req.get("Content-Length"),
+        bodyKeys,
+        githubUrl: summarizeUrlInput(req.body?.githubUrl),
+        dockerUrl: summarizeUrlInput(req.body?.dockerUrl),
+    });
+
+    if (
+        typeof projectId !== "string" ||
+        !/^\d+$/.test(projectId) ||
+        !Number.isSafeInteger(Number(projectId)) ||
+        Number(projectId) < 1
+    ) {
+        res.status(400).json({ message: "Project ID must be a positive integer." });
+        return;
+    }
+
     try{
         const parsed = updateProjectSchema.safeParse(req.body);
 
         if(!parsed.success){
+            console.warn("[project.controller.updateProject] validation failed", {
+                projectId,
+                statusCode: 400,
+                issues: parsed.error.issues.map((issue) => ({
+                    field: issue.path.join("."),
+                    code: issue.code,
+                })),
+            });
             res.status(400).json({
                 message: 'Invalid project details',
                 errors: parsed.error.flatten(),
@@ -58,15 +112,37 @@ export const updateProject: RequestHandler = async (req, res, next) => {
             return;
         }
 
-        const project = await projectService.updateProject(req.params.id as string, parsed.data);
+        const project = await projectService.updateProject(projectId, parsed.data);
 
         if(!project){
+            console.warn("[project.controller.updateProject] project not found", {
+                projectId,
+                statusCode: 404,
+            });
             res.status(404).json({message: 'Project not found.'});
             return;
         }
 
-        res.status(200).json({message: 'Project updated.', data: project});
+        console.info("[project.controller.updateProject] update succeeded", {
+            projectId,
+            statusCode: 200,
+            githubUrl: project.githubUrl === null ? "null" : "set",
+            dockerUrl: project.dockerUrl === null ? "null" : "set",
+        });
+        res.status(200).json({ data: project });
     } catch (error) {
+        const databaseErrorCode =
+            typeof error === "object" &&
+            error !== null &&
+            "code" in error &&
+            typeof error.code === "string"
+                ? error.code
+                : undefined;
+        console.error("[project.controller.updateProject] update failed", {
+            projectId,
+            statusCode: 500,
+            databaseErrorCode,
+        });
         next(error);
     }
 };

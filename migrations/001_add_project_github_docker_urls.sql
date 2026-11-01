@@ -1,0 +1,3 @@
+ALTER TABLE projects
+  ADD COLUMN IF NOT EXISTS github_url TEXT,
+  ADD COLUMN IF NOT EXISTS docker_url TEXT;
